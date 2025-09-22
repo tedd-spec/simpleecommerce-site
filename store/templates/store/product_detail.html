@@ -1,19 +1,931 @@
 {% load static %}
+{% load math_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ product.name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} ({{ cart_count|default:0 }} items) - YourStore</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <h1>{{ product.name }}</h1>
-    <p>{{ product.description }}</p>
-    <p>Price: ${{ product.price }}</p>
-    {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    <!-- Header with Cart Count -->
+    <header>
+        <div class="header-container">
+            <a href="{% url 'home' %}" class="logo">
+                <i class="fas fa-store"></i> Mwiti's Store
+            </a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'product_list' %}">Products</a></li>
+                    <li>
+                        <a href="{% url 'cart_detail' %}" id="cart-link">
+                            <i class="fas fa-shopping-cart"></i> Cart
+                            {% if cart_count > 0 %}
+                            <span class="cart-badge">{{ cart_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                {% if user.is_authenticated %}
+                    <span class="btn btn-primary">Welcome, {{ user.username }}!</span>
+                    <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-secondary">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav style="background: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <a href="{% url 'home' %}" style="color: #666; text-decoration: none;">Home</a> 
+                <i class="fas fa-chevron-right" style="margin: 0 0.5rem; color: #ccc;"></i>
+                <a href="{% url 'product_list' %}" style="color: #666; text-decoration: none;">Products</a>
+                <i class="fas fa-chevron-right" style="margin: 0 0.5rem; color: #ccc;"></i>
+                <span style="color: #333;">{{ product.name }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #666;">
+                <span style="display: flex; align-items: center; gap: 0.25rem;">
+                    <i class="fas fa-shopping-cart" style="color: #ff6b35;"></i>
+                    {{ cart_count|default:0 }} items
+                </span>
+                |
+                <span style="display: flex; align-items: center; gap: 0.25rem;">
+                    <i class="fas fa-star" style="color: #ffc107;"></i>
+                    4.8 rating
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="product-detail-container" style="max-width: 1200px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; @media (max-width: 768px) { grid-template-columns: 1fr; gap: 2rem; }">
+        
+        <!-- Product Gallery -->
+        <div class="product-gallery">
+            <div class="product-main-image-container" style="position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                {% if product.image %}
+                    <img id="main-product-image" 
+                         src="{{ product.image.url }}" 
+                         alt="{{ product.name }}" 
+                         style="width: 100%; height: 400px; object-fit: cover; transition: transform 0.3s ease; cursor: zoom-in;"
+                         onclick="toggleImageZoom(this)">
+                    {% else %}
+                    <div style="width: 100%; height: 400px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                        <i class="fas fa-image" style="font-size: 4rem; color: #dee2e6;"></i>
+                    </div>
+                    {% endif %}
+                
+                <!-- Quick Actions -->
+                <div class="image-actions" style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.3s ease;">
+                    <button onclick="shareProduct({{ product.id }})" title="Share" style="width: 40px; height: 40px; border: none; background: rgba(255,255,255,0.9); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.3s ease;">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button onclick="printProduct()" title="Print" style="width: 40px; height: 40px; border: none; background: rgba(255,255,255,0.9); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.3s ease;">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Thumbnail Gallery -->
+            {% if product.image %}
+            <div class="thumbnail-gallery" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.5rem;">
+                <div class="thumbnail active" onclick="changeMainImage(0)" style="height: 70px; background: #f8f9fa url('{{ product.image.url }}') center/cover; border-radius: 8px; cursor: pointer; border: 2px solid #ff6b35; transition: all 0.3s ease;">
+                </div>
+                <!-- Add more thumbnails if you have multiple images -->
+                {% for i in "123"|make_list %}
+                <div class="thumbnail" onclick="changeMainImage({{ i }})" style="height: 70px; background: linear-gradient(135deg, #f0f0f0, #e0e0e0); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: all 0.3s ease;">
+                    <i class="fas fa-image" style="color: #ccc; font-size: 1.5rem;"></i>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-detail-info">
+            <!-- Product Title and Rating -->
+            <div style="margin-bottom: 1.5rem;">
+                <h1 style="font-size: 2.2rem; font-weight: 300; color: #333; margin: 0 0 0.5rem 0; line-height: 1.2;">{{ product.name }}</h1>
+                
+                <!-- Rating and Reviews -->
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        {% for i in "12345"|make_list %}
+                        <i class="fas fa-star" style="color: #ffc107; font-size: 1rem;"></i>
+                        {% endfor %}
+                        <span style="color: #666; font-size: 0.95rem;">(127 reviews)</span>
+                    </div>
+                    <div style="color: #28a745; font-size: 0.9rem; font-weight: 500;">
+                        <i class="fas fa-check-circle" style="margin-right: 0.25rem;"></i>
+                        In Stock • Ships in 1-2 days
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price and Availability -->
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #fff7e6, #ffedcc); border-radius: 12px; border-left: 4px solid #ff6b35;">
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div class="price-container" style="font-size: 2.5rem; font-weight: bold; color: #ff6b35;">
+                        {{ product.price|format_currency }}
+                    </div>
+                    {% if product.stock > 0 %}
+                    <div class="stock-status" style="display: flex; align-items: center; gap: 0.5rem; background: #d4edda; color: #155724; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 500;">
+                        <i class="fas fa-check-circle"></i>
+                        {{ product.stock }} in stock
+                    </div>
+                    {% else %}
+                    <div class="stock-status" style="display: flex; align-items: center; gap: 0.5rem; background: #f8d7da; color: #721c24; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 500;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Out of Stock
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Product Meta -->
+            <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px;">
+                <h3 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Product Information
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.95rem;">
+                    {% if product.sku %}
+                    <div><strong>SKU:</strong> {{ product.sku }}</div>
+                    {% endif %}
+                    {% if product.brand %}
+                    <div><strong>Brand:</strong> {{ product.brand }}</div>
+                    {% endif %}
+                    {% if product.category %}
+                    <div><strong>Category:</strong> {{ product.category.name }}</div>
+                    {% endif %}
+                    <div><strong>Availability:</strong> 
+                        <span style="color: {% if product.stock > 0 %}#28a745{% else %}#dc3545{% endif %};">
+                            {% if product.stock > 0 %}{{ product.stock }} in stock{% else %}Out of stock{% endif %}
+                        </span>
+                    </div>
+                    {% if product.weight %}
+                    <div><strong>Weight:</strong> {{ product.weight }}</div>
+                    {% endif %}
+                    {% if product.dimensions %}
+                    <div><strong>Dimensions:</strong> {{ product.dimensions }}</div>
+                    {% endif %}
+                    <div><strong>Added:</strong> {{ product.created_at|date:"M d, Y" }}</div>
+                </div>
+            </div>
+
+            <!-- Add to Cart Section -->
+            <div class="add-to-cart-section" style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+                {% if product.stock > 0 %}
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-shopping-cart"></i> Add to Cart
+                    </h3>
+                    
+                    <!-- Quantity Selector -->
+                    <div class="quantity-selector" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8f9fa; padding: 0.75rem; border-radius: 8px; border: 2px solid #e9ecef;">
+                            <button class="quantity-btn decrement" onclick="updateDetailQuantity(-1)" 
+                                    style="width: 40px; height: 40px; border: 2px solid #ddd; background: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #666; transition: all 0.2s ease;" 
+                                    title="Decrease quantity" disabled>
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" id="detail-quantity-input" value="1" min="1" max="{{ product.stock }}" 
+                                   style="width: 70px; text-align: center; border: none; font-size: 1.2rem; font-weight: 600; color: #333; background: transparent;" 
+                                   onchange="updateDetailQuantity(0)"
+                                   onkeydown="return false">
+                            <button class="quantity-btn increment" onclick="updateDetailQuantity(1)" 
+                                    style="width: 40px; height: 40px; border: 2px solid #ddd; background: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #666; transition: all 0.2s ease;" 
+                                    title="Increase quantity">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        
+                        <div style="font-size: 1.1rem; font-weight: 600; color: #ff6b35; white-space: nowrap;">
+                            Total: <span id="detail-total-price">{{ product.price|format_currency }}</span>
+                        </div>
+                        
+                        <div style="font-size: 0.9rem; color: #666; white-space: nowrap;">
+                            {{ product.stock }} available • 
+                            <span style="color: {% if product.stock > 10 %}#28a745{% elif product.stock > 0 %}#ffc107{% else %}#dc3545{% endif %};">
+                                {% if product.stock > 10 %}Plenty available{% elif product.stock > 0 %}{{ product.stock }} left{% else %}Low stock{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-add-cart add-to-cart-btn" 
+                                id="detail-add-to-cart-btn"
+                                data-product-id="{{ product.id }}"
+                                data-product-name="{{ product.name|escapejs }}"
+                                data-product-price="{{ product.price }}"
+                                data-quantity="1"
+                                style="flex: 1; padding: 1.25rem 2rem; background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.75rem; position: relative; overflow: hidden; min-width: 200px; max-width: 250px; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="btn-text">Add to Cart</span>
+                            <div class="loading-spinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                <i class="fas fa-spinner fa-spin" style="color: white;"></i>
+                            </div>
+                        </button>
+                        
+                        <button class="btn btn-wishlist" onclick="toggleWishlist({{ product.id }})" 
+                                style="width: 55px; height: 55px; border: 2px solid #e9ecef; background: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; color: #999; font-size: 1.3rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                                title="Add to Wishlist">
+                            <i class="far fa-heart" id="wishlist-icon"></i>
+                        </button>
+                        
+                        <button class="btn btn-share" onclick="shareProduct({{ product.id }})" 
+                                style="padding: 1.25rem 1.5rem; background: #6c757d; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem;" 
+                                title="Share Product">
+                            <i class="fas fa-share-alt"></i>
+                            Share
+                        </button>
+                    </div>
+                </div>
+                
+                {% else %}
+                <!-- Out of Stock -->
+                <div style="text-align: center; padding: 2.5rem; background: linear-gradient(135deg, #f8d7da, #f5c2c7); border-radius: 12px; border: 2px dashed #dc3545;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                    <h3 style="color: #721c24; margin-bottom: 0.5rem; font-size: 1.5rem;">Out of Stock</h3>
+                    <p style="color: #6c757d; margin-bottom: 1.5rem;">This product is currently unavailable</p>
+                    <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1.5rem;">We'll restock soon. Check back later or get notified when available.</p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="notifyWhenAvailable({{ product.id }})" style="padding: 0.75rem 1.5rem;">
+                            <i class="fas fa-bell"></i> Notify Me
+                        </button>
+                        <a href="{% url 'product_list' %}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">Browse Available</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Shipping & Returns -->
+            <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #28a745;">
+                <h3 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-shipping-fast"></i> Shipping & Returns
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.95rem; color: #666;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-globe" style="color: #007bff; font-size: 1.2rem;"></i>
+                        <div>
+                            <div style="font-weight: 600; color: #333;">Worldwide Shipping</div>
+                            <div>Delivered to 185+ countries</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-clock" style="color: #ffc107; font-size: 1.2rem;"></i>
+                        <div>
+                            <div style="font-weight: 600; color: #333;">Fast Delivery</div>
+                            <div>3-7 business days</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-undo" style="color: #28a745; font-size: 1.2rem;"></i>
+                        <div>
+                            <div style="font-weight: 600; color: #333;">Easy Returns</div>
+                            <div>30-day money back guarantee</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-lock" style="color: #28a745; font-size: 1.2rem;"></i>
+                        <div>
+                            <div style="font-weight: 600; color: #333;">Secure Payment</div>
+                            <div>SSL encryption & fraud protection</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seller Information -->
+            {% if product.brand %}
+            <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #17a2b8;">
+                <h3 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-user-tie"></i> Seller Information
+                </h3>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #17a2b8, #138496); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem;">
+                        {{ product.brand|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">{{ product.brand }}</div>
+                        <div style="color: #666; font-size: 0.9rem;">Verified Seller • 98% Positive Feedback</div>
+                    </div>
+                    <div style="margin-left: auto; text-align: right;">
+                        <div style="font-size: 0.85rem; color: #28a745;">Trusted Seller</div>
+                        <div style="font-size: 0.8rem; color: #666;">Member since {{ product.created_at|date:"M Y" }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Product Description -->
+    <section style="max-width: 1200px; margin: 3rem auto; padding: 0 2rem;">
+        <div style="background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <h2 style="margin-bottom: 1.5rem; color: #333; border-bottom: 3px solid #f0f0f0; padding-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-align-left"></i> Product Description
+            </h2>
+            <div class="product-detail-description" style="line-height: 1.7; color: #555; font-size: 1rem;">
+                {{ product.description|linebreaks }}
+                {% if not product.description %}
+                <p style="color: #999; font-style: italic;">No detailed description available. <a href="#" onclick="contactSeller({{ product.id }})" style="color: #ff6b35;">Contact seller</a> for more information.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <section style="max-width: 1200px; margin: 3rem auto; padding: 0 2rem;">
+        <h2 style="text-align: center; margin-bottom: 3rem; color: #333; font-size: 2rem; position: relative;">
+            <span style="background: white; padding: 0 2rem; position: relative; z-index: 1;">You Might Also Like</span>
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #e9ecef;"></div>
+        </h2>
+        <div class="products-grid" style="margin-bottom: 0; gap: 2rem;">
+            {% for related_product in related_products %}
+            <a href="{% url 'product_detail' related_product.pk %}" class="product-card" style="text-decoration: none; color: inherit;">
+                <div class="product-image" style="position: relative;">
+                    {% if related_product.image %}
+                        <img src="{{ related_product.image.url }}" alt="{{ related_product.name }}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                    {% else %}
+                        <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-box" style="font-size: 2.5rem; color: #dee2e6;"></i>
+                        </div>
+                    {% endif %}
+                    {% if related_product.stock == 0 %}
+                    <div style="position: absolute; top: 8px; right: 8px; background: rgba(220, 53, 69, 0.9); color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                        Sold Out
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="product-info" style="padding: 1.25rem;">
+                    <h3 class="product-title" style="font-size: 1rem; font-weight: 600; color: #333; margin: 0 0 0.5rem 0; line-height: 1.3; height: 2.6em; overflow: hidden;">
+                        {{ related_product.name }}
+                    </h3>
+                    <div class="product-price" style="font-size: 1.25rem; font-weight: bold; color: #ff6b35; margin-bottom: 0.5rem;">
+                        {{ related_product.price|format_currency }}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <div style="display: flex; gap: 0.1rem;">
+                            {% for i in "54321"|make_list %}
+                            <i class="fas fa-star" style="color: #ffc107; font-size: 0.75rem;"></i>
+                            {% endfor %}
+                        </div>
+                        <span style="font-size: 0.85rem; color: #666;">(23)</span>
+                    </div>
+                    <div class="product-actions" style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-add-cart add-to-cart-btn" 
+                                data-product-id="{{ related_product.id }}"
+                                data-product-name="{{ related_product.name|escapejs }}"
+                                data-product-price="{{ related_product.price }}"
+                                style="flex: 1; padding: 0.5rem 0.75rem; background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Add</span>
+                        </button>
+                        <button class="btn" onclick="toggleWishlist({{ related_product.id }})" 
+                                style="width: 35px; height: 35px; border: 2px solid #e9ecef; background: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.9rem; transition: all 0.3s ease;"
+                                title="Add to Wishlist">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% if related_products %}
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{% url 'product_list' %}?category={{ product.category.slug|default:'all' }}" class="btn btn-outline" style="padding: 0.75rem 2rem; border: 2px solid #6c757d; color: #6c757d; text-decoration: none; border-radius: 6px;">
+                <i class="fas fa-th-large"></i> View More in {{ product.category.name|default:'This Category' }}
+            </a>
+        </div>
+        {% endif %}
+    </section>
     {% endif %}
-    <a href="{% url 'add_to_cart' product.id %}">Add to Cart</a>
-    <a href="{% url 'product_list' %}">Back to Products</a>
+
+    <!-- Reviews Section -->
+    <section style="max-width: 1200px; margin: 3rem auto; padding: 0 2rem;">
+        <div style="background: #f8f9fa; padding: 2.5rem; border-radius: 12px;">
+            <h2 style="margin-bottom: 2rem; color: #333; text-align: center; font-size: 1.8rem; position: relative;">
+                <span style="background: #f8f9fa; padding: 0 2rem; position: relative; z-index: 1;">Customer Reviews</span>
+                <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #dee2e6;"></div>
+            </h2>
+            
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: white; padding: 1rem 2rem; border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div style="display: flex; gap: 0.1rem;">
+                        {% for i in "54321"|make_list %}
+                        <i class="fas fa-star" style="color: #ffc107; font-size: 1.1rem;"></i>
+                        {% endfor %}
+                    </div>
+                    <span style="font-size: 1.5rem; font-weight: bold; color: #333;">4.8</span>
+                    <span style="color: #666; font-size: 0.95rem;">(127 reviews)</span>
+                </div>
+            </div>
+            
+            <!-- Sample Reviews -->
+            <div style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #ffc107;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <div style="display: flex; gap: 0.1rem;">
+                            {% for i in "55555"|make_list %}
+                            <i class="fas fa-star" style="color: #ffc107; font-size: 0.9rem;"></i>
+                            {% endfor %}
+                        </div>
+                        <span style="font-weight: 600; color: #333;">5.0</span>
+                        <span style="color: #666; font-size: 0.9rem;">John Doe</span>
+                        <span style="color: #999; font-size: 0.8rem;">• Verified Purchase</span>
+                    </div>
+                    <p style="color: #555; line-height: 1.6; margin-bottom: 0.5rem;">"Absolutely fantastic product! The quality is outstanding and it arrived much faster than expected. Highly recommend to everyone!"</p>
+                    <div style="color: #999; font-size: 0.85rem;">Purchased on {{ product.created_at|date:"M d, Y" }}</div>
+                </div>
+                
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #ffc107;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <div style="display: flex; gap: 0.1rem;">
+                            {% for i in "44444"|make_list %}
+                            <i class="fas fa-star" style="color: #ffc107; font-size: 0.9rem;"></i>
+                            {% endfor %}
+                        </div>
+                        <span style="font-weight: 600; color: #333;">4.0</span>
+                        <span style="color: #666; font-size: 0.9rem;">Sarah Wilson</span>
+                        <span style="color: #999; font-size: 0.8rem;">• Verified Purchase</span>
+                    </div>
+                    <p style="color: #555; line-height: 1.6; margin-bottom: 0.5rem;">"Great product overall, though I wish there were more color options available. Still very satisfied with the purchase!"</p>
+                    <div style="color: #999; font-size: 0.85rem;">Purchased on {{ product.created_at|date:"M d, Y" }}</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="btn btn-primary" onclick="scrollToTop()" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                    <i class="fas fa-arrow-up"></i> Back to Top
+                </button>
+                <p style="color: #666; margin-top: 1rem; font-size: 0.9rem;">Be the first to write a review! <a href="#" style="color: #ff6b35;">Share your thoughts</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="margin-top: 3rem;">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>YourStore</h3>
+                <p>Connecting businesses worldwide through secure and efficient B2B trading solutions. Your trusted partner for quality products and exceptional service.</p>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <a href="#" style="color: #ff6b35; font-size: 1.5rem;" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" style="color: #ff6b35; font-size: 1.5rem;" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" style="color: #ff6b35; font-size: 1.5rem;" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" style="color: #ff6b35; font-size: 1.5rem;" title="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 0.5rem;"><a href="{% url 'home' %}" style="color: #ccc;">Home</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="{% url 'product_list' %}" style="color: #ccc;">Products</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="{% url 'cart_detail' %}" style="color: #ccc;">Cart ({{ cart_count|default:0 }})</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">About Us</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Help Center</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Track Order</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Returns</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Privacy Policy</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Our Locations</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">New York, USA</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">London, UK</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Tokyo, Japan</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Shanghai, China</a></li>
+                    <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc;">Paris, France</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom" style="text-align: center; padding-top: 2rem; border-top: 1px solid #555; color: #999; font-size: 0.9rem;">
+            <p>&copy; 2025 YourStore. All rights reserved. | {{ cart_count|default:0 }} items in your cart | Secure Shopping Guaranteed</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        // Product Detail Page JavaScript
+        let detailQuantity = 1;
+        let maxStock = {{ product.stock|default:999 }};
+        let basePrice = {{ product.price|default:0 }};
+        let isInWishlist = false;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Product detail page loaded:', '{{ product.name }}');
+            
+            // Initialize quantity and total
+            updateDetailQuantity(0);
+            
+            // Initialize add to cart button
+            initAddToCartButton();
+            
+            // Initialize image gallery
+            initImageGallery();
+            
+            // Initialize wishlist
+            initWishlist();
+            
+            // Add event listeners
+            initEventListeners();
+            
+            // Update cart badge
+            if (typeof updateCartBadge === 'function') {
+                updateCartBadge();
+            }
+        });
+
+        function initAddToCartButton() {
+            const addToCartBtn = document.getElementById('detail-add-to-cart-btn');
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const quantity = parseInt(document.getElementById('detail-quantity-input').value);
+                    addProductToCart({{ product.id }}, quantity, '{{ product.name|escapejs }}', this);
+                });
+            }
+        }
+
+        function initImageGallery() {
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            thumbnails.forEach((thumb, index) => {
+                thumb.addEventListener('click', function() {
+                    changeMainImage(index);
+                });
+            });
+        }
+
+        function initWishlist() {
+            // Check if product is in wishlist (you'd get this from context)
+            const wishlistIcon = document.getElementById('wishlist-icon');
+            if (wishlistIcon && isInWishlist) {
+                wishlistIcon.classList.remove('far');
+                wishlistIcon.classList.add('fas');
+                wishlistIcon.parentElement.style.color = '#e74c3c';
+            }
+        }
+
+        function initEventListeners() {
+            // Quantity input handling
+            const quantityInput = document.getElementById('detail-quantity-input');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', function() {
+                    let value = parseInt(this.value);
+                    if (isNaN(value) || value < 1) value = 1;
+                    if (value > maxStock) value = maxStock;
+                    this.value = value;
+                    detailQuantity = value;
+                    updateDetailTotal();
+                });
+                
+                // Prevent manual editing with arrow keys
+                quantityInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                    }
+                });
+            }
+        }
+
+        function updateDetailQuantity(change) {
+            let newQuantity = detailQuantity + change;
+            newQuantity = Math.max(1, Math.min(newQuantity, maxStock));
+            detailQuantity = newQuantity;
+            
+            const quantityInput = document.getElementById('detail-quantity-input');
+            if (quantityInput) {
+                quantityInput.value = newQuantity;
+            }
+            
+            updateDetailTotal();
+            updateQuantityButtons();
+        }
+
+        function updateDetailTotal() {
+            const totalPrice = basePrice * detailQuantity;
+            const totalElement = document.getElementById('detail-total-price');
+            if (totalElement) {
+                totalElement.textContent = totalPrice.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                });
+            }
+        }
+
+        function updateQuantityButtons() {
+            const decrementBtn = document.querySelector('.decrement');
+            const incrementBtn = document.querySelector('.increment');
+            
+            if (decrementBtn) {
+                decrementBtn.disabled = detailQuantity <= 1;
+                decrementBtn.style.opacity = detailQuantity <= 1 ? '0.5' : '1';
+                decrementBtn.style.cursor = detailQuantity <= 1 ? 'not-allowed' : 'pointer';
+            }
+            
+            if (incrementBtn) {
+                incrementBtn.disabled = detailQuantity >= maxStock;
+                incrementBtn.style.opacity = detailQuantity >= maxStock ? '0.5' : '1';
+                incrementBtn.style.cursor = detailQuantity >= maxStock ? 'not-allowed' : 'pointer';
+            }
+        }
+
+        function toggleWishlist(productId) {
+            const button = event.currentTarget;
+            const icon = button.querySelector('i');
+            const originalIconClass = icon.className;
+            
+            // Show loading
+            icon.className = 'fas fa-spinner fa-spin';
+            button.disabled = true;
+            
+            // Toggle wishlist (AJAX call)
+            fetch(`/wishlist/${productId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    isInWishlist = data.is_in_wishlist;
+                    
+                    if (isInWishlist) {
+                        icon.className = 'fas fa-heart';
+                        button.style.color = '#e74c3c';
+                        button.style.borderColor = '#e74c3c';
+                        showNotification('Added to wishlist!', 'success');
+                    } else {
+                        icon.className = 'far fa-heart';
+                        button.style.color = '#999';
+                        button.style.borderColor = '#e9ecef';
+                        showNotification('Removed from wishlist', 'info');
+                    }
+                } else {
+                    // Revert on error
+                    icon.className = originalIconClass;
+                    showNotification(data.message || 'Failed to update wishlist', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Wishlist error:', error);
+                icon.className = originalIconClass;
+                showNotification('Failed to update wishlist', 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+        }
+
+        function shareProduct(productId) {
+            if (navigator.share) {
+                navigator.share({
+                    title: '{{ product.name|escapejs }} - YourStore',
+                    text: 'Check out this amazing product!',
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    showNotification('Link copied to clipboard!', 'success');
+                }).catch(() => {
+                    // Ultimate fallback: show the URL
+                    prompt('Copy this link to share:', window.location.href);
+                });
+            }
+        }
+
+        function notifyWhenAvailable(productId) {
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            button.disabled = true;
+            
+            // Simulate notification request
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-check"></i> Notified!';
+                button.style.background = '#28a745';
+                showNotification('You\'ll be notified when this product is back in stock!', 'success');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '';
+                    button.disabled = false;
+                }, 2000);
+            }, 1000);
+        }
+
+        function contactSeller(productId) {
+            // Open contact form or email
+            const subject = encodeURIComponent(`Inquiry about {{ product.name|escapejs }}`);
+            const body = encodeURIComponent(`Hi, I'm interested in your {{ product.name|escapejs }} product. Could you provide more information?`);
+            window.open(`mailto:seller@yourstore.com?subject=${subject}&body=${body}`, '_blank');
+        }
+
+        function toggleImageZoom(img) {
+            if (!img.style.transform || img.style.transform === 'scale(1)') {
+                img.style.transform = 'scale(1.5)';
+                img.style.transformOrigin = 'center center';
+                document.body.style.overflow = 'hidden';
+            } else {
+                img.style.transform = 'scale(1)';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function changeMainImage(thumbnailIndex) {
+            const mainImage = document.getElementById('main-product-image');
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            
+            if (!mainImage) return;
+            
+            // In a real app, you'd have multiple images
+            // For now, we'll just update the active thumbnail
+            thumbnails.forEach((thumb, index) => {
+                if (index === thumbnailIndex) {
+                    thumb.classList.add('active');
+                    thumb.style.borderColor = '#ff6b35';
+                    thumb.style.transform = 'scale(1.05)';
+                } else {
+                    thumb.classList.remove('active');
+                    thumb.style.borderColor = 'transparent';
+                    thumb.style.transform = 'scale(1)';
+                }
+            });
+            
+            // Add click effect
+            thumbnails[thumbnailIndex].style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                thumbnails[thumbnailIndex].style.transform = 'scale(1.05)';
+            }, 150);
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function printProduct() {
+            window.print();
+        }
+
+        // Quantity controls for detail page
+        function updateDetailQuantity(change) {
+            const quantityInput = document.getElementById('detail-quantity-input');
+            if (!quantityInput) return;
+            
+            let currentValue = parseInt(quantityInput.value) || 1;
+            let newValue = currentValue + change;
+            
+            // Ensure valid range
+            newValue = Math.max(1, Math.min(newValue, maxStock));
+            
+            quantityInput.value = newValue;
+            detailQuantity = newValue;
+            
+            // Update total price
+            updateDetailTotal();
+            
+            // Update button states
+            updateQuantityButtons();
+        }
+
+        // Global functions available to main.js
+        window.updateDetailQuantity = updateDetailQuantity;
+        window.toggleWishlist = toggleWishlist;
+        window.shareProduct = shareProduct;
+        window.notifyWhenAvailable = notifyWhenAvailable;
+        window.contactSeller = contactSeller;
+        window.changeMainImage = changeMainImage;
+        window.toggleImageZoom = toggleImageZoom;
+        window.scrollToTop = scrollToTop;
+        window.printProduct = printProduct;
+
+        // Add CSS for this page
+        const pageStyle = document.createElement('style');
+        pageStyle.textContent = `
+            .product-detail-container {
+                animation: fadeIn 0.5s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .product-main-image-container:hover .image-actions {
+                opacity: 1;
+            }
+            
+            .quantity-btn:hover:not(:disabled) {
+                border-color: #ff6b35 !important;
+                background: #fff5f5 !important;
+                color: #ff6b35 !important;
+                transform: scale(1.05);
+            }
+            
+            .btn-wishlist.liked {
+                color: #e74c3c !important;
+                border-color: #e74c3c !important;
+            }
+            
+            .btn-wishlist:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+            }
+            
+            .btn-share:hover {
+                background: #5a6268;
+                transform: translateY(-2px);
+            }
+            
+            .thumbnail:hover {
+                transform: scale(1.05);
+                z-index: 10;
+            }
+            
+            .thumbnail.active {
+                transform: scale(1.05);
+            }
+            
+            @media print {
+                .no-print, header, footer, .product-actions {
+                    display: none !important;
+                }
+                
+                .product-detail-container {
+                    max-width: none !important;
+                    box-shadow: none !important;
+                }
+                
+                body {
+                    background: white;
+                    font-size: 12pt;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .product-detail-container {
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    padding: 0 1rem;
+                }
+                
+                .add-to-cart-section {
+                    padding: 1.5rem !important;
+                }
+                
+                .quantity-selector {
+                    flex-direction: column;
+                    gap: 1rem;
+                    align-items: stretch;
+                }
+                
+                .quantity-selector > div {
+                    justify-content: center;
+                }
+                
+                .product-actions {
+                    flex-direction: column;
+                }
+                
+                .btn-add-cart {
+                    order: 2;
+                }
+                
+                .btn-wishlist, .btn-share {
+                    order: 1;
+                    width: auto !important;
+                    padding: 1rem !important;
+                }
+            }
+        `;
+        document.head.appendChild(pageStyle);
+    </script>
 </body>
 </html>

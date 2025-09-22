@@ -1,15 +1,330 @@
+{% load static %}
+{% load math_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Mwiti's Store</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <h1>Register</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Register</button>
-    </form>
+    <!-- Header -->
+    <header style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+        <div class="header-container" style="color: #333;">
+            <a href="{% url 'home' %}" class="logo" style="color: #ff6b35;">
+                <i class="fas fa-store"></i> Mwiti's Store
+            </a>
+            <nav style="color: #333;">
+                <ul class="nav-menu" style="color: #333;">
+                    <li><a href="{% url 'home' %}" style="color: #333;">Home</a></li>
+                    <li><a href="{% url 'product_list' %}" style="color: #333;">Products</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 2rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+        <div class="form-container" style="max-width: 450px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 2rem; padding: 0 2rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #ff6b35, #f7931e); border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user-plus" style="color: white; font-size: 2rem;"></i>
+                </div>
+                <h1 class="form-title" style="color: #333;">Create Your Account</h1>
+                <p style="color: #666; margin: 0;">Join thousands of businesses worldwide</p>
+            </div>
+
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="success">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" id="register-form" novalidate>
+                {% csrf_token %}
+                {{ form.username.label_tag }}
+                <div class="form-group">
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                {{ form.email.label_tag }}
+                <div class="form-group">
+                    <input type="email" name="email" required placeholder="your.email@company.com" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem;">
+                    <div id="email-error" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+                </div>
+                
+                {{ form.password1.label_tag }}
+                <div class="form-group" style="position: relative;">
+                    {{ form.password1 }}
+                    <i class="fas fa-eye toggle-password" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #999; cursor: pointer; z-index: 10;" onclick="togglePassword(this)"></i>
+                    {% if form.password1.errors %}
+                        <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.password1.errors.0 }}</div>
+                    {% endif %}
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+                        <div><i class="fas fa-check" style="color: #28a745; margin-right: 0.5rem; display: none;" id="length-check"></i>At least 8 characters</div>
+                        <div><i class="fas fa-check" style="color: #28a745; margin-right: 0.5rem; display: none;" id="number-check"></i>Contains a number</div>
+                        <div><i class="fas fa-check" style="color: #28a745; margin-right: 0.5rem; display: none;" id="special-check"></i>Contains a special character</div>
+                    </div>
+                </div>
+                
+                {{ form.password2.label_tag }}
+                <div class="form-group">
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                        <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.password2.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; color: #666;">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <span class="checkmark"></span>
+                        I agree to the <a href="#" style="color: #ff6b35;">Terms of Service</a> and <a href="#" style="color: #ff6b35;">Privacy Policy</a>
+                    </label>
+                    <div id="terms-error" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem; display: none;">You must agree to the terms</div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.2rem; font-size: 1.1rem; background: linear-gradient(135deg, #ff6b35, #f7931e);" id="submit-btn">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+                <p style="color: #666; margin: 0;">Already have an account?</p>
+                <a href="{% url 'login' %}" class="btn btn-secondary" style="width: 100%; margin-top: 1rem; background: white; color: #ff6b35; border: 1px solid #ff6b35;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div style="text-align: center;">
+                    <i class="fas fa-lock" style="color: #28a745; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                    <div style="font-size: 0.8rem; color: #666;">Secure</div>
+                </div>
+                <div style="text-align: center;">
+                    <i class="fas fa-shield-alt" style="color: #28a745; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                    <div style="font-size: 0.8rem; color: #666;">Verified</div>
+                </div>
+                <div style="text-align: center;">
+                    <i class="fas fa-clock" style="color: #28a745; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                    <div style="font-size: 0.8rem; color: #666;">24/7 Support</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="margin-top: auto;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; text-align: center; color: #999; padding: 2rem; background: #f8f9fa;">
+            <p>&copy; 2025 Mwiti's Store. All rights reserved. | Join our global marketplace</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        // Enhanced registration form validation
+        const passwordField = document.querySelector('input[name="password1"]');
+        const confirmPasswordField = document.querySelector('input[name="password2"]');
+        const emailField = document.querySelector('input[name="email"]');
+        const termsCheckbox = document.getElementById('terms');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // Password validation
+        passwordField.addEventListener('input', function() {
+            const password = this.value;
+            const hasLength = password.length >= 8;
+            const hasNumber = /\d/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            
+            document.getElementById('length-check').style.display = hasLength ? 'inline' : 'none';
+            document.getElementById('number-check').style.display = hasNumber ? 'inline' : 'none';
+            document.getElementById('special-check').style.display = hasSpecial ? 'inline' : 'none';
+        });
+
+        // Email validation
+        emailField.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const errorDiv = document.getElementById('email-error');
+            
+            if (email && !emailRegex.test(email)) {
+                errorDiv.textContent = 'Please enter a valid email address';
+                errorDiv.style.display = 'block';
+                this.classList.add('error');
+            } else {
+                errorDiv.style.display = 'none';
+                this.classList.remove('error');
+            }
+        });
+
+        // Password confirmation
+        confirmPasswordField.addEventListener('input', function() {
+            if (this.value !== passwordField.value) {
+                this.setCustomValidity('Passwords do not match');
+                this.classList.add('error');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('error');
+            }
+        });
+
+        // Terms checkbox
+        termsCheckbox.addEventListener('change', function() {
+            const errorDiv = document.getElementById('terms-error');
+            if (!this.checked) {
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        });
+
+        // Form submission
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Check terms
+            if (!termsCheckbox.checked) {
+                e.preventDefault();
+                document.getElementById('terms-error').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Check email
+            const email = emailField.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                e.preventDefault();
+                document.getElementById('email-error').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Check passwords
+            if (passwordField.value !== confirmPasswordField.value) {
+                e.preventDefault();
+                confirmPasswordField.classList.add('error');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showNotification('Please fix the errors above', 'error');
+                return false;
+            }
+            
+            // Show loading
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            submitBtn.disabled = true;
+        });
+
+        function togglePassword(icon) {
+            const passwordField = icon.previousElementSibling;
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        }
+
+        // Custom checkbox styling
+        document.querySelectorAll('.checkbox-container input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const checkmark = this.nextElementSibling;
+                if (this.checked) {
+                    checkmark.style.backgroundColor = '#ff6b35';
+                    checkmark.style.borderColor = '#ff6b35';
+                } else {
+                    checkmark.style.backgroundColor = '#f8f9fa';
+                    checkmark.style.borderColor = '#ddd';
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .form-group input.error {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+        
+        .checkbox-container {
+            position: relative;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            height: 18px;
+            width: 18px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            display: inline-block;
+            position: relative;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #ff6b35;
+            border-color: #ff6b35;
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+    </style>
 </body>
 </html>

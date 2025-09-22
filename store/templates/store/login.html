@@ -1,22 +1,197 @@
+{% load static %}
+{% load math_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mwiti's Store</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <h1>Login</h1>
-    {% if messages %}
-        {% for message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <label>Username: <input type="text" name="username"></label><br>
-        <label>Password: <input type="password" name="password"></label><br>
-        <button type="submit">Login</button>
-    </form>
-    <a href="{% url 'register' %}">Register</a>
+    <!-- Header -->
+    <header style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+        <div class="header-container" style="color: #333;">
+            <a href="{% url 'home' %}" class="logo" style="color: #ff6b35;">
+                <i class="fas fa-store"></i> YourStore
+            </a>
+            <nav style="color: #333;">
+                <ul class="nav-menu" style="color: #333;">
+                    <li><a href="{% url 'home' %}" style="color: #333;">Home</a></li>
+                    <li><a href="{% url 'product_list' %}" style="color: #333;">Products</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+        <div class="form-container" style="max-width: 400px; width: 100%;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 class="form-title">
+                    <i class="fas fa-sign-in-alt" style="color: #ff6b35; margin-right: 0.5rem;"></i>
+                    Welcome Back
+                </h1>
+                <p style="color: #666; margin: 0;">Sign in to your account</p>
+            </div>
+
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="error">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" id="login-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user" style="margin-right: 0.5rem; color: #ff6b35;"></i>Username or Email</label>
+                    <input type="text" id="username" name="username" required 
+                           style="padding-left: 2.5rem;" placeholder="Enter your username or email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock" style="margin-right: 0.5rem; color: #ff6b35;"></i>Password</label>
+                    <input type="password" id="password" name="password" required 
+                           style="padding-left: 2.5rem;" placeholder="Enter your password">
+                    <a href="#" style="float: right; font-size: 0.9rem; color: #ff6b35; text-decoration: none; margin-top: 0.25rem;">Forgot Password?</a>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="remember-me" name="remember">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; background: linear-gradient(135deg, #ff6b35, #f7931e);">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+                <p style="color: #666; margin: 0;">Don't have an account?</p>
+                <a href="{% url 'register' %}" class="btn btn-secondary" style="width: 100%; margin-top: 1rem; background: white; color: #ff6b35; border: 1px solid #ff6b35;">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </a>
+            </div>
+
+            <div style="text-align: center; margin-top: 1.5rem; color: #999; font-size: 0.9rem;">
+                <p>By signing in, you agree to our <a href="#" style="color: #ff6b35;">Terms of Service</a> and <a href="#" style="color: #ff6b35;">Privacy Policy</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="margin-top: auto;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; text-align: center; color: #999; padding: 2rem; background: #f8f9fa;">
+            <p>&copy; 2025 YourStore. All rights reserved. | Secure Login Guaranteed</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        // Enhanced form validation
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                e.preventDefault();
+                showNotification('Please fill in all fields', 'error');
+                return false;
+            }
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                showNotification('Password must be at least 6 characters', 'error');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+            submitBtn.disabled = true;
+            
+            // Reset after 3 seconds (in real app, this would be after response)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+
+        // Password visibility toggle
+        const passwordField = document.getElementById('password');
+        const togglePassword = document.createElement('i');
+        togglePassword.className = 'fas fa-eye';
+        togglePassword.style.cssText = 'position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #999; cursor: pointer; z-index: 10;';
+        
+        passwordField.parentNode.style.position = 'relative';
+        passwordField.parentNode.appendChild(togglePassword);
+        
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+
+    <style>
+        .checkbox-container {
+            position: relative;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            height: 18px;
+            width: 18px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            display: inline-block;
+            position: relative;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #ff6b35;
+            border-color: #ff6b35;
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    </style>
 </body>
 </html>

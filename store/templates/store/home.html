@@ -1,0 +1,211 @@
+{% load static %}
+{% load math_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YourStore - Global B2B Marketplace</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="{% url 'home' %}" class="logo">
+                <i class="fas fa-store"></i> Mwiti's Store
+            </a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'product_list' %}">Products</a></li>
+                    <li><a href="{% url 'cart_detail' %}">Cart</a></li>
+                  
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                {% if user.is_authenticated %}
+                    <span class="btn btn-primary">Welcome, {{ user.username }}!</span>
+                    <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-secondary">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Discover Your Next Business Opportunity</h1>
+            <p>Connect with manufacturers, suppliers, and exporters from the world's largest online B2B marketplace</p>
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search for products, suppliers...">
+                <button class="search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Trade with Confidence</h3>
+            <p>Ensure production quality with verified suppliers and protect your purchases with secure payment options and mediation support.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3>Verified Suppliers</h3>
+            <p>Connect with suppliers featuring third-party verified credentials. Look for the "Verified" badge to source with confidence.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Grow Your Business</h3>
+            <p>Get tailored discounts, services, and tools designed for your business stage, from startups to established enterprises.</p>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="products-section">
+        <h2 class="section-title">Featured Products</h2>
+        <div class="products-grid">
+            {% for product in products %}
+            <a href="{% url 'product_detail' product.pk %}" class="product-card">
+                <div class="product-image">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">{{ product.name|truncatechars:40 }}</h3>
+                    <div class="product-price">${{ product.price }}</div>
+                    <p class="product-description">{{ product.description|truncatechars:80 }}</p>
+                    <div class="product-actions">
+                        <span class="btn btn-small btn-add-cart add-to-cart" data-product-id="{{ product.id }}">
+                            <i class="fas fa-shopping-cart"></i> Add to Cart
+                        </span>
+                        <span class="verified-badge">
+                            <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="no-products">
+                <i class="fas fa-box-open" style="font-size: 4rem; color: #ccc; margin-bottom: 1rem;"></i>
+                <h3>No products available</h3>
+                <p>Check back soon for exciting new products!</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="text-align: center;">
+            <a href="{% url 'product_list' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                View All Products
+            </a>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats" style="background: white; padding: 3rem 2rem; margin: 3rem 0;">
+        <div class="stats-grid" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center;">
+            <div>
+                <div style="font-size: 3rem; font-weight: bold; color: #ff6b35; margin-bottom: 0.5rem;">10K+</div>
+                <div style="color: #666;">Products Available</div>
+            </div>
+            <div>
+                <div style="font-size: 3rem; font-weight: bold; color: #ff6b35; margin-bottom: 0.5rem;">5K+</div>
+                <div style="color: #666;">Verified Suppliers</div>
+            </div>
+            <div>
+                <div style="font-size: 3rem; font-weight: bold; color: #ff6b35; margin-bottom: 0.5rem;">100+</div>
+                <div style="color: #666;">Countries Served</div>
+            </div>
+            <div>
+                <div style="font-size: 3rem; font-weight: bold; color: #ff6b35; margin-bottom: 0.5rem;">24/7</div>
+                <div style="color: #666;">Customer Support</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>YourStore</h3>
+                <p>Connecting businesses worldwide through secure and efficient B2B trading solutions.</p>
+                <div style="margin-top: 1rem;">
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-facebook"></i></a>
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-twitter"></i></a>
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" style="color: #ff6b35;"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'product_list' %}">Products</a></li>
+                    <li><a href="{% url 'cart_detail' %}">Cart</a></li>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Customer Service</a></li>
+                    <li><a href="#">Return Policy</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Locations</h3>
+                <ul>
+                    <li><a href="#">New York, USA</a></li>
+                    <li><a href="#">London, UK</a></li>
+                    <li><a href="#">Tokyo, Japan</a></li>
+                    <li><a href="#">Shanghai, China</a></li>
+                    <li><a href="#">Paris, France</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 YourStore. All rights reserved. | Made with ❤️ for global trade</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        // Add some dynamic behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stats on scroll
+            const stats = document.querySelectorAll('.stats div');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+            
+            stats.forEach(stat => {
+                stat.style.opacity = '0';
+                stat.style.transform = 'translateY(20px)';
+                stat.style.transition = 'all 0.6s ease';
+                observer.observe(stat);
+            });
+        });
+    </script>
+</body>
+</html>

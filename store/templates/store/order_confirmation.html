@@ -1,0 +1,443 @@
+{% load static %}
+{% load math_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation #{{ order.id }} - Mwiti's Store</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="{% url 'home' %}" class="logo">
+                <i class="fas fa-store"></i> YourStore
+            </a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'product_list' %}">Products</a></li>
+                    <li><a href="{% url 'cart_detail' %}"><i class="fas fa-shopping-cart"></i> Cart</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <span class="btn btn-primary">Welcome, {{ user.username }}!</span>
+                <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="cart-container" style="max-width: 900px; margin: 0 auto;">
+        <!-- Success Message -->
+        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 1px solid #c3e6cb; border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(40, 167, 69, 0.2);">
+            <div style="font-size: 4rem; color: #28a745; margin-bottom: 1rem;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1 style="color: #155724; margin: 0 0 1rem 0; font-size: 2.5rem;">Thank You for Your Order!</h1>
+            <p style="color: #155724; font-size: 1.1rem; margin: 0 0 1.5rem 0;">Your order has been received and is being processed.</p>
+            <div style="margin-bottom: 1rem; font-weight: bold; color: #155724; font-size: 1.2rem;">
+                <i class="fas fa-hashtag" style="margin-right: 0.5rem;"></i>
+                Order #{{ order.id|stringformat:"05d" }}
+            </div>
+            <div style="background: rgba(255,255,255,0.8); padding: 0.75rem; border-radius: 8px; display: inline-block; margin-top: 1rem;">
+                <div style="font-size: 0.9rem; color: #155724;">
+                    <strong>Order Date:</strong> {{ order.created_at|date:"F d, Y \a\t g:i A" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 2rem;">
+            <div style="padding: 1.5rem; border-bottom: 1px solid #eee; background: #f8f9fa;">
+                <h2 style="margin: 0; color: #333; font-size: 1.8rem;">
+                    <i class="fas fa-receipt"></i> Order Items ({{ order.items_count }} item{{ order.items_count|pluralize }})
+                </h2>
+            </div>
+            
+            <div style="padding: 0;">
+                {% for item in order_items %}
+                <div style="display: flex; align-items: center; padding: 1.5rem; border-bottom: 1px solid #f0f0f0; gap: 1rem;">
+                    <div style="width: 80px; height: 80px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden;">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem; line-height: 1.4;">
+                            {{ item.product.name }}
+                        </h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            <span style="color: #666;">SKU: {{ item.product.sku|default:"N/A" }}</span>
+                            <span style="color: #666;">{{ item.product.brand|default:"Various" }}</span>
+                            <span style="color: #666;">{{ item.product.category.name|default:"General" }}</span>
+                        </div>
+                        <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                            Quantity: <strong>{{ item.quantity }}</strong> • 
+                            Unit Price: <strong>${{ item.price|floatformat:2 }}</strong>
+                        </div>
+                        {% if item.product.weight %}
+                        <div style="color: #666; font-size: 0.8rem;">
+                            Weight: {{ item.product.weight }} • 
+                            Dimensions: {{ item.product.dimensions|default:"Standard" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="text-align: right; min-width: 120px;">
+                        <div style="font-weight: bold; color: #ff6b35; font-size: 1.2rem;">
+                            {{ item.total_price|format_currency }}
+                        </div>
+                        <div style="color: #666; font-size: 0.8rem; line-height: 1.2;">
+                            {{ item.quantity }} × ${{ item.price|floatformat:2 }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="padding: 2rem; text-align: center; color: #666;">
+                    <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>No items in this order</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Order Details -->
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1.5rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-info-circle"></i> Order Details
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; @media (max-width: 768px) { grid-template-columns: 1fr; }">
+                <div>
+                    <h4 style="margin: 0 0 1rem 0; color: #666; font-size: 1.1rem;">Customer Information</h4>
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="margin-bottom: 0.5rem;">
+                            <strong>{{ user.get_full_name|default:user.username|title }}</strong>
+                        </div>
+                        <div style="margin-bottom: 0.5rem; color: #666;">
+                            {{ user.email }}
+                        </div>
+                        <div style="color: #666; font-size: 0.9rem;">
+                            <i class="fas fa-user" style="margin-right: 0.5rem;"></i>
+                            Member since {{ user.date_joined|date:"F Y" }}
+                        </div>
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">
+                        <div><i class="fas fa-phone" style="color: #ff6b35; margin-right: 0.5rem;"></i>Need help? Contact us at support@yourstore.com</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="margin: 0 0 1rem 0; color: #666; font-size: 1.1rem;">Payment Summary</h4>
+                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; padding: 0.25rem 0;">
+                            <span>Subtotal:</span>
+                            <span>{{ order.total_price|format_currency }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; color: #28a745; padding: 0.25rem 0;">
+                            <span><i class="fas fa-truck"></i> Free Shipping</span>
+                            <span>$0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; padding: 0.25rem 0;">
+                            <span>Tax (8%):</span>
+                            <span>{{ order.total_price|mul:0.08|format_currency }}</span>
+                        </div>
+                        {% with final_total=order.total_price|add:order.total_price|mul:0.08 %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 2px solid #ff6b35; font-weight: bold; font-size: 1.3rem; margin-top: 0.5rem;">
+                            <span>Total Amount:</span>
+                            <span style="color: #ff6b35;">{{ final_total|format_currency }}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #666; text-align: right; margin-top: 0.25rem;">
+                            Paid Amount: {{ final_total|format_currency }}
+                        </div>
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Status Timeline -->
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 2rem; margin-bottom: 2rem; text-align: center;">
+            <h3 style="margin: 0 0 2rem 0; color: #333;">Order Status</h3>
+            <div style="display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto; position: relative;">
+                <!-- Timeline line -->
+                <div style="position: absolute; top: 25px; left: 50px; right: 50px; height: 4px; background: #e9ecef;"></div>
+                
+                <!-- Step 1: Order Confirmed -->
+                <div style="flex: 1; position: relative;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 50%; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <i class="fas fa-check" style="color: white; font-size: 1.2rem;"></i>
+                    </div>
+                    <div style="font-weight: bold; color: #28a745; margin-bottom: 0.25rem;">Confirmed</div>
+                    <div style="color: #666; font-size: 0.9rem;">{{ order.created_at|date:"M d, Y" }}</div>
+                </div>
+                
+                <!-- Step 2: Processing -->
+                <div style="flex: 1; position: relative;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffc107, #fd7e14); border-radius: 50%; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <i class="fas fa-cog fa-spin" style="color: white; font-size: 1.2rem;"></i>
+                    </div>
+                    <div style="font-weight: bold; color: #ffc107; margin-bottom: 0.25rem;">Processing</div>
+                    <div style="color: #666; font-size: 0.9rem;">In Progress</div>
+                </div>
+                
+                <!-- Step 3: Shipping -->
+                <div style="flex: 1; position: relative;">
+                    <div style="width: 50px; height: 50px; background: #6c757d; border-radius: 50%; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <i class="fas fa-truck" style="color: white; font-size: 1.2rem;"></i>
+                    </div>
+                    <div style="font-weight: bold; color: #6c757d; margin-bottom: 0.25rem;">Shipping</div>
+                    <div style="color: #666; font-size: 0.9rem;">Pending</div>
+                </div>
+                
+                <!-- Step 4: Delivered -->
+                <div style="flex: 1; position: relative;">
+                    <div style="width: 50px; height: 50px; background: #6c757d; border-radius: 50%; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <i class="fas fa-home" style="color: white; font-size: 1.2rem;"></i>
+                    </div>
+                    <div style="font-weight: bold; color: #6c757d; margin-bottom: 0.25rem;">Delivered</div>
+                    <div style="color: #666; font-size: 0.9rem;">Pending</div>
+                </div>
+            </div>
+            <div style="margin-top: 2rem; font-size: 0.9rem; color: #666;">
+                <p>Track your order anytime using order #{{ order.id|stringformat:"05d" }} or visit your <a href="#" style="color: #ff6b35;">account dashboard</a>.</p>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 2rem; text-align: center; margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 2rem 0; color: #333;">What's Next?</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <div>
+                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check" style="color: white; font-size: 1.5rem;"></i>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: #333;">Order Confirmed</h4>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Your payment has been processed successfully and your order is confirmed.</p>
+                </div>
+                <div>
+                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #ffc107, #fd7e14); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-cog fa-spin" style="color: white; font-size: 1.5rem;"></i>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: #333;">Processing</h4>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Your order is being prepared by our warehouse team (1-2 business days).</p>
+                </div>
+                <div>
+                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #007bff, #0056b3); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-truck" style="color: white; font-size: 1.5rem;"></i>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: #333;">Shipping</h4>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Estimated delivery: 3-7 business days. You'll receive tracking info soon.</p>
+                </div>
+                <div>
+                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #6f42c1, #5a2d91); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-star" style="color: white; font-size: 1.5rem;"></i>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: #333;">Delivered</h4>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Get ready to enjoy your purchase! 30-day return policy applies.</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'product_list' %}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                    <i class="fas fa-store"></i> Continue Shopping
+                </a>
+                <button class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem;" onclick="printOrder()" class="no-print">
+                    <i class="fas fa-print"></i> Print Order
+                </button>
+                <a href="mailto:support@yourstore.com?subject=Order {{ order.id }}&body=Hi, I have a question about order #{{ order.id }} placed on {{ order.created_at|date:'Y-m-d' }}" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem; border: 1px solid #6c757d; color: #6c757d; text-decoration: none; border-radius: 6px;">
+                    <i class="fas fa-envelope"></i> Contact Support
+                </a>
+            </div>
+        </div>
+
+        <!-- Important Information -->
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-exclamation-triangle"></i> Important Information
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; font-size: 0.9rem; color: #666;">
+                <div>
+                    <i class="fas fa-clock" style="color: #ffc107; margin-right: 0.5rem;"></i>
+                    <strong>Processing Time:</strong> 1-2 business days
+                </div>
+                <div>
+                    <i class="fas fa-globe" style="color: #007bff; margin-right: 0.5rem;"></i>
+                    <strong>Shipping:</strong> Worldwide delivery available
+                </div>
+                <div>
+                    <i class="fas fa-undo" style="color: #28a745; margin-right: 0.5rem;"></i>
+                    <strong>Returns:</strong> 30-day money back guarantee
+                </div>
+                <div>
+                    <i class="fas fa-shield-alt" style="color: #28a745; margin-right: 0.5rem;"></i>
+                    <strong>Security:</strong> All transactions encrypted with SSL
+                </div>
+            </div>
+        </div>
+
+        <!-- Track Order -->
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #333;">
+                <i class="fas fa-search"></i> Track Your Order
+            </h3>
+            <p style="margin: 0 0 1.5rem 0; color: #666;">
+                You can track your order status anytime by using your order number or visiting your 
+                <a href="#" style="color: #ff6b35; text-decoration: none; font-weight: 500;">account dashboard</a>.
+            </p>
+            <div style="background: white; padding: 1rem 1.5rem; border-radius: 8px; display: inline-block; font-family: 'Courier New', monospace; font-weight: bold; color: #ff6b35; letter-spacing: 1px; font-size: 1.1rem; border: 2px solid #ff6b35;">
+                ORDER #{{ order.id|stringformat:"05d" }}
+            </div>
+            <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                <p>Expected delivery: <strong>{{ order.created_at|date:"F d, Y" }} - {{ order.created_at|date:"F d, Y"|add:7 }} </strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="margin-top: 3rem;">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>YourStore</h3>
+                <p>Connecting businesses worldwide through secure and efficient B2B trading solutions.</p>
+                <div style="margin-top: 1rem;">
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-twitter"></i></a>
+                    <a href="#" style="color: #ff6b35; margin-right: 1rem;"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" style="color: #ff6b35;"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'product_list' %}">Products</a></li>
+                    <li><a href="{% url 'cart_detail' %}">Cart</a></li>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Customer Service</a></li>
+                    <li><a href="#">Return Policy</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Locations</h3>
+                <ul>
+                    <li><a href="#">New York, USA</a></li>
+                    <li><a href="#">London, UK</a></li>
+                    <li><a href="#">Tokyo, Japan</a></li>
+                    <li><a href="#">Shanghai, China</a></li>
+                    <li><a href="#">Paris, France</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 YourStore. All rights reserved. | Order #{{ order.id }} confirmed on {{ order.created_at|date:"F d, Y \a\t g:i A" }}</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        function printOrder() {
+            window.print();
+        }
+
+        // Auto-print option (commented out to avoid annoying users)
+        // if (confirm('Would you like to print your order confirmation?')) {
+        //     printOrder();
+        // }
+
+        // Email sharing functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add copy to clipboard for order number
+            const orderNumber = document.querySelector('.footer-bottom p');
+            if (orderNumber) {
+                orderNumber.addEventListener('click', function() {
+                    navigator.clipboard.writeText('Order #{{ order.id|stringformat:"05d" }}');
+                    showNotification('Order number copied to clipboard!', 'success');
+                });
+            }
+            
+            // Animate timeline on load
+            const timelineSteps = document.querySelectorAll('.order-status > div');
+            timelineSteps.forEach((step, index) => {
+                setTimeout(() => {
+                    step.style.opacity = '1';
+                    step.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+
+        // Print styles
+        const printStyles = `
+            @media print {
+                header, footer, .no-print { 
+                    display: none !important; 
+                }
+                .cart-container { 
+                    max-width: none; 
+                    box-shadow: none;
+                    border: 1px solid #ddd;
+                }
+                body { 
+                    background: white; 
+                    font-size: 12pt;
+                }
+                h1, h2, h3 { 
+                    color: black !important;
+                }
+                .btn { 
+                    display: none !important;
+                }
+                .timeline-line {
+                    background: #333 !important;
+                }
+            }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = printStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+
+    <style>
+        .timeline-step {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        @media (max-width: 768px) {
+            .order-details-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            
+            .timeline {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            
+            .timeline-line {
+                display: none;
+            }
+        }
+    </style>
+</body>
+</html>
